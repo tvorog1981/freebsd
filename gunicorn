@@ -1,0 +1,62 @@
+#!/usr/local/bin/bash
+#you want to copy this file to /etc/rc.d/ and chmod 755 /etc/rc.d/gungicorn
+
+
+. /etc/rc.subr
+rcvar="gunicorn_enable"
+name="gunicorn"
+
+
+
+start_cmd="gunicorn_start"
+stop_cmd="gunicorn_stop"
+command='/home/node/www/env/bin/gunicorn'
+
+NAME="node"                                            
+DJANGODIR=/home/node/www/node/                        
+PIDFILE=/var/run/gunicorn.pid     
+USER=gunicorn
+GROUP=gunicorn
+WORKERS=3
+
+DJANGO_SETTINGS_MODULE=node.settings                     
+DJANGO_WSGI_MODULE=node.wsgi                            
+
+LIMITREQUESTFIELDS=32000
+LIMITREQUESTFIELDSIZE=0
+LOGFILE='/var/log/gunicorn.log'
+SOCKET='/var/run/gunicorn.sock'
+
+gunicorn_start(){
+        cd $DJANGODIR
+        source ../env/bin/activate
+        export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+        export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+
+         ${command}  ${DJANGO_WSGI_MODULE}:application \
+        --name $NAME \
+        --workers ${WORKERS} \
+        --user=${USER} --group=${GROUP} \
+        --bind=unix:${SOCKET} \
+        --reload \
+        --log-level=debug \
+        --daemon \
+        --limit-request-fields ${LIMITREQUESTFIELDS} \
+        --limit-request-field_size ${LIMITREQUESTFIELDSIZE} \
+        --log-file=${LOGFILE} 
+}
+
+
+gunicorn_stop(){
+kill `cat ${PIDFILE}`
+
+}
+gunicorn_status(){
+cat ${PIDFILE}
+
+}
+load_rc_config ${name}
+run_rc_command "$1"
+
+
